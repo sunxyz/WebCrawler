@@ -8,7 +8,7 @@ public class ZhihuManager {
 
 	public static void main(String[] args) {
 		SpriderManager.create(Zhihu.class, "https://www.zhihu.com/question/29073730").configer()
-				.setPipeline(new ZhihuPipeline()).setThread(10).run();
+				.setPipeline(ZhihuPipeline.class).setThread(10).run();
 	}
 
 }

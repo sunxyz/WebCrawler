@@ -10,9 +10,6 @@ import cn.sunxyz.webcrawler.pipeline.Pipeline;
 import cn.sunxyz.webcrawler.scheduler.Scheduler;
 import cn.sunxyz.webcrawler.scheduler.cache.Cache;
 
-/**
- * TODO 此处 WSprider 是否线程安全
- */
 public final class SpriderManager {
 
 	private static SpriderManager manager;
@@ -22,8 +19,6 @@ public final class SpriderManager {
 	private static int nThreads = 10;
 
 	private static int task = 10;
-	
-	private static Class<?> clazz;
 
 	private static ExecutorService executor;
 
@@ -41,7 +36,11 @@ public final class SpriderManager {
 	public static SpriderManager create(Class<?> clazz, String... urls) {
 		// 创建任务
 		WSprider.scheduler.push(urls);
-		SpriderManager.clazz = clazz;
+		// 创建对象实例
+		wSpriders = new WSprider[task];
+		for (int i = 0; i < task; i++) {
+			wSpriders[i] = new WSprider(clazz);
+		}
 		return manager;
 	}
 
@@ -51,11 +50,6 @@ public final class SpriderManager {
 
 	@SuppressWarnings("static-access")
 	public void run() {
-		// 创建任务
-		wSpriders = new WSprider[task];
-		for (int i = 0; i < task; i++) {
-			wSpriders[i] = new WSprider(clazz);
-		}
 		// 执行任务
 		executor = Executors.newFixedThreadPool(nThreads);
 		for (int i = 0; i < task; i++) {
@@ -101,13 +95,7 @@ public final class SpriderManager {
 			manager.run(fetchType);
 		}
 
-		// TODO 此处是否让任务持有相同对象的引用
 		private Cache cache;
-
-		public Configer setDownLoader(DownLoader downLoader) {
-			WSprider.downLoader = downLoader;
-			return this;
-		}
 
 		public Configer setScheduler(Scheduler scheduler) {
 			WSprider.scheduler = scheduler;
@@ -121,17 +109,6 @@ public final class SpriderManager {
 			return this;
 		}
 
-		public Configer setBuilder(Builder builder) {
-			WSprider.builderAdapter.setBuilder(builder);
-			return this;
-		}
-
-		@SuppressWarnings("unchecked")
-		public Configer setPipeline(Pipeline<? extends Object> pipeline) {
-			WSprider.pipeline = (Pipeline<Object>) pipeline;
-			return this;
-		}
-
 		public Configer setFetchType(FetchType fetchType) {
 			WSprider.fetchType = fetchType;
 			return this;
@@ -139,6 +116,46 @@ public final class SpriderManager {
 
 		public Configer addRequest(String... requests) {
 			WSprider.scheduler.push(requests);
+			return this;
+		}
+
+		public Configer setDownLoader(Class<? extends DownLoader> downLoaderClazz) {
+			for (int i = 0; i < task; i++) {
+				DownLoader downLoader = null;
+				try {
+					downLoader = (DownLoader) downLoaderClazz.newInstance();
+				} catch (InstantiationException | IllegalAccessException e) {
+					e.printStackTrace();
+				}
+				wSpriders[i].configer().setDownLoader(downLoader);
+			}
+
+			return this;
+		}
+
+		public Configer setBuilder(Class<? extends Builder> builderClazz) {
+			for (int i = 0; i < task; i++) {
+				Builder builder = null;
+				try {
+					builder = (Builder) builderClazz.newInstance();
+				} catch (InstantiationException | IllegalAccessException e) {
+					e.printStackTrace();
+				}
+				wSpriders[i].configer().setBuilder(builder);
+			}
+			return this;
+		}
+
+		public <T> Configer setPipeline(Class<? extends Pipeline<T>> pipelineClazz) {
+			for (int i = 0; i < task; i++) {
+				Pipeline<T> pipeline = null;
+				try {
+					pipeline = (Pipeline<T>) pipelineClazz.newInstance();
+				} catch (InstantiationException | IllegalAccessException e) {
+					e.printStackTrace();
+				}
+				wSpriders[i].configer().setPipeline(pipeline);
+			}
 			return this;
 		}
 

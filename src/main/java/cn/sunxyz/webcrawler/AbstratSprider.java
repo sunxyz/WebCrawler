@@ -6,7 +6,6 @@ import cn.sunxyz.webcrawler.builder.OwnerTreeBuilder;
 import cn.sunxyz.webcrawler.download.DownLoader;
 import cn.sunxyz.webcrawler.download.JsoupDownloader;
 import cn.sunxyz.webcrawler.parser.link.LinksFilter;
-import cn.sunxyz.webcrawler.pipeline.DeafultPipeLine;
 import cn.sunxyz.webcrawler.pipeline.Pipeline;
 import cn.sunxyz.webcrawler.scheduler.QueueScheduler;
 import cn.sunxyz.webcrawler.scheduler.Scheduler;
@@ -14,63 +13,68 @@ import cn.sunxyz.webcrawler.scheduler.cache.Cache;
 
 public abstract class AbstratSprider {
 
-	protected static int sleep = 1000;
+	static int sleep;
 
-	protected static FetchType fetchType;
+	static FetchType fetchType;
 
-	protected static Scheduler scheduler;// 队列管理
+	static Scheduler scheduler;// 队列管理
 
-	protected static DownLoader downLoader;// 下载器
+	protected DownLoader downLoader;// 下载器
 
-	protected static LinksFilter linksFilter;// 链接筛选匹配
+	protected LinksFilter linksFilter;// 链接筛选匹配
 
-	protected static OwnerBuilderAdapter builderAdapter; // 对象构建
+	protected OwnerBuilderAdapter builderAdapter; // 对象构建
 
-	protected static Pipeline<Object> pipeline;// 对象信息 管道
+	protected Pipeline<Object> pipeline;// 对象信息 管道
 
-	protected static Configer configer;
+	private Configer configer;
 
 	static {
-		scheduler = new QueueScheduler();
-		downLoader = new JsoupDownloader();
-		pipeline = new DeafultPipeLine<>();
-		configer = new Configer();
+		sleep = 1000;
 		fetchType = FetchType.Eager;
+		scheduler = new QueueScheduler();
+	}
+
+	{
+		downLoader = new JsoupDownloader();
+		configer = new Configer();
 	}
 
 	abstract void download(FetchType fetchType);
 
-	public void start(FetchType fetchType) {
+	public Configer configer() {
+		return this.configer;
+	}
+
+	protected void start(FetchType fetchType) {
 		if (builderAdapter == null || fetchType == null) {
 			throw new NullPointerException();
 		}
 		this.download(fetchType);
 	}
 
-	public Configer configer() {
-		return configer;
-	}
-
-	protected static void init(Class<?> clazz, Pipeline<Object> pipeline, String... urls) {
+	protected void init(Class<?> clazz, Pipeline<Object> pipeline, String... urls) {
 		Builder builder = new OwnerTreeBuilder();
-		builderAdapter = new OwnerBuilderAdapter(clazz, builder);
-		linksFilter = new LinksFilter(builderAdapter);
-		AbstratSprider.pipeline = pipeline;
+		this.builderAdapter = new OwnerBuilderAdapter(clazz, builder);
+		this.linksFilter = new LinksFilter(builderAdapter);
+		this.pipeline = pipeline;
 		scheduler.push(urls);
 	}
 
-	public static class Configer {
+	public class Configer {
 
+		private AbstratSprider that = AbstratSprider.this;
+		// TODO cache稍后做
 		private Cache cache;
 
 		public Configer setDownLoader(DownLoader downLoader) {
-			AbstratSprider.downLoader = downLoader;
+			that.downLoader = downLoader;
 			return this;
 		}
 
 		public Configer setScheduler(Scheduler scheduler) {
 			AbstratSprider.scheduler = scheduler;
-			AbstratSprider.scheduler.setCache(cache);
+			scheduler.setCache(cache);
 			return this;
 		}
 
@@ -81,18 +85,13 @@ public abstract class AbstratSprider {
 		}
 
 		public Configer setBuilder(Builder builder) {
-			AbstratSprider.builderAdapter.setBuilder(builder);
+			that.builderAdapter.setBuilder(builder);
 			return this;
 		}
 
 		@SuppressWarnings("unchecked")
 		public Configer setPipeline(Pipeline<? extends Object> pipeline) {
-			AbstratSprider.pipeline = (Pipeline<Object>) pipeline;
-			return this;
-		}
-
-		public Configer setFetchType(FetchType fetchType) {
-			AbstratSprider.fetchType = fetchType;
+			that.pipeline = (Pipeline<Object>) pipeline;
 			return this;
 		}
 
