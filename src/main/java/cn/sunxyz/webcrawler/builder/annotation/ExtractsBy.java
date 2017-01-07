@@ -1,22 +1,14 @@
 package cn.sunxyz.webcrawler.builder.annotation;
 
 import java.lang.annotation.ElementType;
-import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Repeatable(ExtractsBy.class)
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ExtractBy {
+@interface ExtractsBy {
 
-	String value();
-
-	ExtractType type() default ExtractType.XSOUP;
-
-	public enum ExtractType {
-		XSOUP, SELECT
-	}
+	ExtractBy[] value();
 
 }

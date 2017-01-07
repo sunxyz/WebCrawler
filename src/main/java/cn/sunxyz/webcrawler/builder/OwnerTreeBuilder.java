@@ -54,7 +54,9 @@ public class OwnerTreeBuilder implements Builder {
 						break;
 					}
 					Field field = beanField.getField();
-					JavaBeanSetter.setMethod(owner, field, result);
+					if(JavaBeanUtil.getMethod(owner, field.getName())==null){
+						JavaBeanSetter.setMethod(owner, field, result);
+					}
 				} else if (annotation instanceof ExtractElement) {
 					Field field = beanField.getField();
 					Class<?> elClazz = field.getType();

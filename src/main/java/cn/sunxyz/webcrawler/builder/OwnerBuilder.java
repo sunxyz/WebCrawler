@@ -10,10 +10,11 @@ import org.jsoup.nodes.Document;
 import cn.sunxyz.bean.bean.JavaBean;
 import cn.sunxyz.bean.bean.JavaBeanField;
 import cn.sunxyz.bean.utils.JavaBeanSetter;
+import cn.sunxyz.bean.utils.JavaBeanUtil;
 import cn.sunxyz.webcrawler.Page;
 import cn.sunxyz.webcrawler.builder.annotation.ExtractBy;
 import us.codecraft.xsoup.Xsoup;
-
+@Deprecated
 public class OwnerBuilder implements Builder {
 
 
@@ -40,7 +41,9 @@ public class OwnerBuilder implements Builder {
 						break;
 					}
 					Field field = beanField.getField();
-					JavaBeanSetter.setMethod(owner, field, result);
+					if(JavaBeanUtil.getMethod(owner, field.getName())==null){
+						JavaBeanSetter.setMethod(owner, field, result);
+					}
 				}
 			}
 		}
